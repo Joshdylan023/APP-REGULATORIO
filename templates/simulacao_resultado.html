@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+
+{% block title %}Resultado da Simulação{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1 class="fw-light">Resultado da Simulação</h1>
+  <a href="{% url 'processo_detail' pk=simulacao.processo.pk %}" class="btn btn-light"><i class="fas fa-arrow-left me-2"></i> Voltar para o Processo</a>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    {{ simulacao.nome_simulacao }}
+  </div>
+  <div class="card-body">
+    <div class="row">
+      <div class="col-md-7">
+        <h4>Conceitos por Eixo</h4>
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Eixo</th>
+              <th class="text-center">Conceito Contínuo</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for eixo, media in resultados_eixos.items %}
+              <tr>
+                <td>{{ eixo }}</td>
+                <td class="text-center"><strong>{{ media }}</strong></td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div class="col-md-5 d-flex align-items-center justify-content-center" style="background-color: #f8f9fa; border-radius: .5rem;">
+        <div class="text-center">
+          <h4 class="text-muted">Conceito Final Contínuo</h4>
+          <h1 class="display-1 fw-bold text-primary">{{ conceito_final }}</h1>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="card-footer text-muted">
+    Simulação realizada em {{ simulacao.data_criacao|date:"d/m/Y \à\s H:i" }}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+
+{% block title %}Formulário de Processo{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-8">
+    <div class="card">
+      <div class="card-body">
+        {% if form.instance.pk %}
+          <h1 class="fw-light mb-4">Editar Processo Regulatório</h1>
+        {% else %}
+          <h1 class="fw-light mb-4">Criar Novo Processo Regulatório</h1>
+        {% endif %}
+
+        <form method="post">
+          {% csrf_token %}
+          
+          {% for field in form %}
+            <div class="mb-4">
+              <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+              {{ field }}
+              {% if field.help_text %}
+                <small class="form-text text-muted">{{ field.help_text }}</small>
+              {% endif %}
+              {% for error in field.errors %}
+                <div class="invalid-feedback">{{ error }}</div>
+              {% endfor %}
+            </div>
+          {% endfor %}
+
+          <button type="submit" class="btn btn-primary btn-lg mt-3">Salvar Processo</button>
+          <a href="{{ request.META.HTTP_REFERER|default:request.build_absolute_uri }}" class="btn btn-light btn-lg mt-3">Cancelar</a>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

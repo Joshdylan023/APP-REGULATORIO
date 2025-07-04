@@ -1,0 +1,106 @@
+{% extends 'base.html' %}
+
+{% block title %}Detalhes: {{ processo.get_tipo_processo_display }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1 class="fw-light">Visão Geral do Processo</h1>
+  <div>
+    <a href="{% url 'ged_explorer' pk=processo.pk %}" class="btn btn-info text-white"><i class="fas fa-folder-open me-2"></i> Gerenciar Documentos</a>
+    <a href="{% url 'simulador' pk=processo.pk %}" class="btn btn-success"><i class="fas fa-calculator me-2"></i> Iniciar Simulação</a>
+    <a href="{% url 'processo_update' pk=processo.pk %}" class="btn btn-outline-primary"><i class="fas fa-pencil-alt me-2"></i> Editar Processo</a>
+    <a href="{% url 'dashboard' %}" class="btn btn-light"><i class="fas fa-arrow-left me-2"></i> Voltar</a>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-lg-6 mb-4">
+    <div class="card mb-4">
+      <div class="card-header">{{ processo.get_tipo_processo_display }}</div>
+      <div class="card-body">
+        <p><strong>Instituição:</strong> {{ processo.instituicao.nome }}</p>
+        {% if processo.curso %}<p><strong>Curso:</strong> {{ processo.curso.nome }}</p>{% endif %}
+        <p><strong>Status:</strong> <span class="badge rounded-pill bg-info">{{ processo.get_status_display }}</span></p>
+        <p><strong>Conceito (Última Simulação):</strong> 
+          {% if conceito_final_ultima_simulacao is not None %}<strong class="text-primary fs-5">{{ conceito_final_ultima_simulacao }}</strong>{% if historico_simulacoes.first %}<a href="{% url 'simulacao_update' pk=historico_simulacoes.first.pk %}" class="ms-2 small text-decoration-underline">(Editar Simulação)</a>{% endif %}{% else %}<span class="text-muted">Nenhuma simulação realizada</span>{% endif %}
+        </p>
+        <p><strong>Protocolo e-MEC:</strong> <code>{{ processo.protocolo_mec|default:"Não informado" }}</code></p>
+        <p><strong>Responsável:</strong> {{ processo.responsavel.get_full_name|default:processo.responsavel.username }}</p>
+      </div>
+    </div>
+    <div class="card">
+        <div class="card-header"><i class="fas fa-calendar-alt me-2"></i> Prazos do Processo</div>
+        <div class="card-body">
+            <ul class="list-group list-group-light mb-4">
+                {% for prazo in prazos %}
+                    <li class="list-group-item"><strong>{{ prazo.data|date:"d/m/Y" }}:</strong> {{ prazo.descricao }}</li>
+                {% empty %}
+                    <li class="list-group-item text-muted">Nenhum prazo cadastrado.</li>
+                {% endfor %}
+            </ul>
+            <hr>
+            <h5 class="mt-4">Adicionar Novo Prazo</h5>
+            <form method="post">
+                {% csrf_token %}
+                {{ form_prazo.as_p }}
+                <button type="submit" name="submit_prazo" class="btn btn-primary btn-sm mt-2">Adicionar Prazo</button>
+            </form>
+        </div>
+    </div>
+  </div>
+  <div class="col-lg-6 mb-4">
+    <div class="card mb-4">
+        <div class="card-header"><i class="fas fa-history me-2"></i> Histórico de Simulações</div>
+        <div class="card-body">
+          {% include 'partials/_historico_simulacoes.html' %}
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-header"><i class="fas fa-tasks me-2"></i> Plano de Ação e Adequações</div>
+        <div class="card-body">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Descrição da Ação</th>
+                        <th>Responsável</th>
+                        <th>Prazo</th>
+                        <th class="text-center">Status</th>
+                        <th class="text-center">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for plano in planos_de_acao %}
+                    <tr>
+                        <td style="white-space: pre-wrap;">{{ plano.descricao }}</td>
+                        <td>{{ plano.responsavel_acao.get_full_name|default:"N/D" }}</td>
+                        <td>{{ plano.data_limite|date:"d/m/Y"|default:"N/D" }}</td>
+                        <td class="text-center">
+                            {% if plano.status == 'CONCLUIDO' %}<span class="badge bg-success">Concluído</span>
+                            {% elif plano.status == 'EM_ANDAMENTO' %}<span class="badge bg-warning text-dark">Em Andamento</span>
+                            {% else %}<span class="badge bg-danger">Não Iniciado</span>{% endif %}
+                        </td>
+                        <td class="text-center">
+                            <a href="{% url 'plano_acao_update' pk=plano.pk %}" class="btn btn-outline-secondary btn-sm">
+                                <i class="fas fa-pencil-alt"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center text-muted">Nenhum item no plano de ação ainda.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <hr>
+            <h5 class="mt-4">Adicionar Novo Item ao Plano</h5>
+            <form method="post">
+                {% csrf_token %}
+                {{ form_plano_acao.as_p }}
+                <button type="submit" name="submit_plano" class="btn btn-primary mt-2">Adicionar Ação</button>
+            </form>
+        </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

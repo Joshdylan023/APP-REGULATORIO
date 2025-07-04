@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+
+{% block title %}Editar Item do Plano de Ação{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-8">
+    <div class="card">
+      <div class="card-body">
+        <h3 class="card-title text-center mb-4">Editar Item do Plano de Ação</h3>
+        <p class="text-muted text-center">Processo: {{ plano_acao.processo.get_tipo_processo_display }}</p>
+
+        <form method="post">
+          {% csrf_token %}
+          {{ form.as_p }}
+          <div class="d-flex justify-content-end mt-4">
+            <a href="{% url 'processo_detail' pk=plano_acao.processo.pk %}" class="btn btn-light me-2">Cancelar</a>
+            <button type="submit" class="btn btn-primary">Salvar Alterações</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

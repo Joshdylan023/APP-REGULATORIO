@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+
+{% block title %}
+  {% if simulacao %}Editar Simulação{% else %}Nova Simulação{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1 class="fw-light">
+    {% if simulacao %}Editar Simulação{% else %}Simulador de Notas{% endif %}
+  </h1>
+  <a href="{% url 'processo_detail' pk=processo.pk %}" class="btn btn-light"><i class="fas fa-arrow-left me-2"></i> Voltar</a>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <p class="card-text">Atribua uma nota de 1 a 5 para cada indicador abaixo.</p>
+
+        <form method="post">
+        {% csrf_token %}
+
+        <div class="accordion" id="accordionEixos">
+            {% for eixo in eixos %}
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="heading-{{ eixo.pk }}">
+                <button class="accordion-button {% if not forloop.first %}collapsed{% endif %}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-{{ eixo.pk }}">
+                    <strong>Eixo {{ forloop.counter }}: {{ eixo.nome }}</strong>
+                </button>
+                </h2>
+                <div id="collapse-{{ eixo.pk }}" class="accordion-collapse collapse {% if forloop.first %}show{% endif %}" data-bs-parent="#accordionEixos">
+                <div class="accordion-body">
+                    <table class="table table-sm table-hover">
+                        <thead>
+                            <tr>
+                                <th>Indicador</th>
+                                <th style="width: 15%;">Nota</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for indicador in eixo.indicadores.all %}
+                            <tr>
+                                <td>
+                                    <strong>{{ indicador.codigo }}</strong> - {{ indicador.descricao }}
+                                </td>
+                                <td>
+                                    <select name="nota-{{ indicador.pk }}" class="form-select" required>
+                                        <option value="" {% if not indicador.nota_preenchida %}selected{% endif %} disabled>Selecione...</option>
+                                        <option value="1" {% if indicador.nota_preenchida == 1 %}selected{% endif %}>1</option>
+                                        <option value="2" {% if indicador.nota_preenchida == 2 %}selected{% endif %}>2</option>
+                                        <option value="3" {% if indicador.nota_preenchida == 3 %}selected{% endif %}>3</option>
+                                        <option value="4" {% if indicador.nota_preenchida == 4 %}selected{% endif %}>4</option>
+                                        <option value="5" {% if indicador.nota_preenchida == 5 %}selected{% endif %}>5</option>
+                                    </select>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="text-center mt-4">
+            <button type="submit" class="btn btn-primary btn-lg">
+            {% if simulacao %}Salvar Alterações{% else %}Salvar e Calcular Simulação{% endif %}
+            </button>
+        </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

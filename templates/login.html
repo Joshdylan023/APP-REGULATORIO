@@ -1,0 +1,82 @@
+{% load static %} <!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Login - Gestão Regulatória</title>
+  
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/7.3.2/mdb.min.css" />
+  
+  <style>
+    /* Estilos para a estrutura de duas colunas */
+    .login-container {
+      height: 100vh;
+    }
+    .left-column {
+      background-color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .right-column {
+      background-color: #004a99; /* Um azul corporativo, ajuste se necessário */
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .login-card {
+      width: 100%;
+      max-width: 400px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container-fluid login-container p-0">
+    <div class="row g-0 h-100">
+      
+      <div class="col-md-5 col-lg-6 d-none d-md-flex left-column">
+        <img src="{% static 'images/logo-ies.png' %}" alt="Logo da IES" class="img-fluid w-50">
+      </div>
+
+      <div class="col-md-7 col-lg-6 d-flex right-column">
+        <div class="card bg-light text-dark login-card shadow-5-strong">
+          <div class="card-body p-5 text-center">
+            <h4 class="mb-4">Informe suas credenciais para acessar a aplicação</h4>
+            
+            <form method="post">
+              {% csrf_token %}
+              
+              <div class="input-group mb-4">
+                <span class="input-group-text"><i class="fas fa-user"></i></span>
+                <input type="text" name="username" id="username" class="form-control form-control-lg" placeholder="Login" />
+              </div>
+
+              <div class="input-group mb-4">
+                <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                <input type="password" name="password" id="password" class="form-control form-control-lg" placeholder="Senha" />
+              </div>
+
+              {% if form.errors %}
+                <p class="text-danger small">Seu usuário ou senha estão incorretos.</p>
+              {% endif %}
+
+              <button data-mdb-ripple-init class="btn btn-primary btn-lg btn-block w-100" type="submit">Login</button>
+            </form>
+
+          </div>
+          <div class="card-footer text-center small">
+            <p class="mb-1">Suporte: suporte.ti@suaies.com</p>
+            <p class="text-muted mb-0">Versão 1.0.0</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/7.3.2/mdb.umd.min.js"></script>
+</body>
+</html>

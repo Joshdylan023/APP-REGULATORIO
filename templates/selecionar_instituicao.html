@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Selecionar Instituição</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style> body { background-color: #f5f5f5; } </style>
+</head>
+<body class="d-flex align-items-center justify-content-center" style="height: 100vh;">
+    <div class="card shadow" style="width: 100%; max-width: 500px;">
+        <div class="card-header text-center">
+            <h3>Selecione uma Instituição para Continuar</h3>
+        </div>
+        <div class="card-body p-4">
+            <p>Olá, {{ user.username }}. Você tem acesso às seguintes instituições. Por favor, escolha uma para iniciar sua sessão de trabalho.</p>
+
+            <form method="post">
+                {% csrf_token %}
+                <div class="list-group">
+                    {% for instituicao in instituicoes_list %}
+                        <button type="submit" name="instituicao_id" value="{{ instituicao.pk }}" class="list-group-item list-group-item-action">
+                            {{ instituicao.nome }}
+                        </button>
+                    {% empty %}
+                        <p class="text-center text-muted">Você não tem acesso a nenhuma instituição no momento. Por favor, contate um administrador.</p>
+                    {% endfor %}
+                </div>
+            </form>
+
+            <div class="text-center mt-4">
+                <a href="{% url 'logout' %}">Sair (Logout)</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

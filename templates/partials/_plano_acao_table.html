@@ -1,0 +1,41 @@
+<table class="table table-hover">
+    <thead>
+        <tr>
+            <th>Descrição da Ação</th>
+            <th>Responsável</th>
+            <th>Prazo</th>
+            <th class="text-center">Status</th>
+            <th class="text-center">Ações</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for plano in planos_de_acao %}
+        <tr>
+            <td style="white-space: pre-wrap;">{{ plano.descricao }}</td>
+            <td>{{ plano.responsavel_acao.get_full_name|default:"N/D" }}</td>
+            <td>{{ plano.data_limite|date:"d/m/Y"|default:"N/D" }}</td>
+            <td class="text-center">
+                {% if plano.status == 'CONCLUIDO' %}<span class="badge bg-success">Concluído</span>
+                {% elif plano.status == 'EM_ANDAMENTO' %}<span class="badge bg-warning text-dark">Em Andamento</span>
+                {% else %}<span class="badge bg-danger">Não Iniciado</span>{% endif %}
+            </td>
+            <td class="text-center">
+                <a href="{% url 'plano_acao_update' pk=plano.pk %}" class="btn btn-outline-secondary btn-sm">
+                    <i class="fas fa-pencil-alt"></i>
+                </a>
+            </td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="5" class="text-center text-muted">Nenhum item no plano de ação ainda.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+<hr>
+<h5 class="mt-4">Adicionar Novo Item ao Plano</h5>
+<form method="post">
+    {% csrf_token %}
+    {{ form_plano_acao.as_p }}
+    <button type="submit" name="submit_plano" class="btn btn-primary mt-2">Adicionar Ação</button>
+</form>

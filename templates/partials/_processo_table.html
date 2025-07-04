@@ -1,0 +1,22 @@
+<thead class="table-light">
+  <tr>
+    <th>Protocolo</th>
+    <th>Tipo de Processo</th>
+    <th>Curso</th>
+    <th>Status</th>
+  </tr>
+</thead>
+<tbody>
+  {% for processo in page_obj %}
+  <tr>
+    <td><code>{{ processo.protocolo_mec|default:"-" }}</code></td>
+    <td><a href="{% url 'processo_detail' pk=processo.pk %}">{{ processo.get_tipo_processo_display }}</a></td>
+    <td>{{ processo.curso.nome|default:"N/A" }}</td>
+    <td><span class="badge rounded-pill bg-secondary">{{ processo.get_status_display }}</span></td>
+  </tr>
+  {% empty %}
+  <tr>
+    <td colspan="4" class="text-center">Nenhum processo encontrado.</td>
+  </tr>
+  {% endfor %}
+</tbody>

@@ -1,0 +1,144 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard - Gestão Regulatória{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1 class="fw-light">Dashboard</h1>
+  <a href="{% url 'processo_create' %}" class="btn btn-primary">
+    <i class="fas fa-plus me-2"></i> Criar Novo Processo
+  </a>
+</div>
+
+<div class="card mb-4">
+  <div class="card-body">
+    <form method="GET" action="{% url 'dashboard' %}" class="row g-3 align-items-end">
+      <div class="col-md-5">
+        <label for="tipo" class="form-label">Filtrar por Tipo</label>
+        <select name="tipo" id="tipo" class="form-select">
+          <option value="">Todos os Tipos</option>
+          {% for value, display in tipos_processo %}
+            <option value="{{ value }}" {% if value == filtro_tipo_atual %}selected{% endif %}>{{ display }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-5">
+        <label for="status" class="form-label">Filtrar por Status</label>
+        <select name="status" id="status" class="form-select">
+          <option value="">Todos os Status</option>
+          {% for value, display in status_list %}
+            <option value="{{ value }}" {% if value == filtro_status_atual %}selected{% endif %}>{{ display }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-2">
+        <button type="submit" class="btn btn-secondary w-100">Filtrar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-lg-4 mb-4">
+    <div class="card mb-4">
+      <div class="card-header">Processos por Status</div>
+      <div class="card-body d-flex justify-content-center align-items-center">
+        <canvas id="statusPieChart"></canvas>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">Resultado da Última Simulação</div>
+      <div class="card-body">
+        <canvas id="eixosBarChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-8">
+    <div class="card">
+      <div class="card-header">Processos Ativos</div>
+      <div class="card-body">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            {% include 'partials/_processo_table.html' %}
+          </table>
+        </div>
+        <nav aria-label="Navegação de página" class="mt-3">
+          <ul class="pagination justify-content-center">
+            {% if page_obj.has_previous %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&tipo={{ filtro_tipo_atual }}&status={{ filtro_status_atual }}">Anterior</a></li>{% else %}<li class="page-item disabled"><a class="page-link" href="#">Anterior</a></li>{% endif %}
+            <li class="page-item active" aria-current="page"><span class="page-link">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span></li>
+            {% if page_obj.has_next %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&tipo={{ filtro_tipo_atual }}&status={{ filtro_status_atual }}">Próxima</a></li>{% else %}<li class="page-item disabled"><a class="page-link" href="#">Próxima</a></li>{% endif %}
+          </ul>
+        </nav>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+{{ block.super }} <script>
+document.addEventListener('DOMContentLoaded', () => {
+    // Lógica para o Gráfico de Pizza
+    const ctxPie = document.getElementById('statusPieChart');
+    if (ctxPie) {
+        fetch("{% url 'api_processos_status' %}")
+          .then(response => response.json())
+          .then(apiData => {
+            if (apiData.labels && apiData.labels.length > 0) {
+              new Chart(ctxPie, {
+                type: 'pie',
+                data: {
+                  labels: apiData.labels,
+                  datasets: [{
+                    label: 'Nº de Processos',
+                    data: apiData.data,
+                    backgroundColor: ['rgba(255, 99, 132, 0.7)','rgba(54, 162, 235, 0.7)','rgba(255, 206, 86, 0.7)','rgba(75, 192, 192, 0.7)','rgba(153, 102, 255, 0.7)'],
+                    borderColor: '#fff',
+                    borderWidth: 2
+                  }]
+                },
+                options: { responsive: true, plugins: { legend: { position: 'top' } } }
+              });
+            }
+          });
+    }
+
+    // Lógica para o Gráfico de Barras
+    const ctxBar = document.getElementById('eixosBarChart');
+    if (ctxBar) {
+        fetch("{% url 'api_simulacao_eixos' %}")
+          .then(response => response.json())
+          .then(apiData => {
+            if (apiData.labels && apiData.labels.length > 0) {
+                new Chart(ctxBar, {
+                  type: 'bar',
+                  data: {
+                      labels: apiData.labels,
+                      datasets: [{
+                          label: 'Conceito Médio',
+                          data: apiData.data,
+                          backgroundColor: 'rgba(54, 162, 235, 0.7)',
+                          borderColor: 'rgba(54, 162, 235, 1)',
+                          borderWidth: 1
+                      }]
+                  },
+                  options: {
+                      indexAxis: 'y',
+                      scales: { x: { beginAtZero: true, max: 5 } },
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      plugins: { legend: { display: false } }
+                  }
+                });
+            } else {
+                const context = ctxBar.getContext('2d');
+                context.font = '14px Segoe UI';
+                context.textAlign = 'center';
+                context.fillStyle = '#6c757d';
+                context.fillText('Nenhuma simulação encontrada.', ctxBar.width / 2, 50);
+            }
+          });
+    }
+});
+</script>
+{% endblock %}
