@@ -8,16 +8,34 @@
     <div class="card">
       <div class="card-body">
         <h3 class="card-title text-center mb-4">Editar Item do Plano de Ação</h3>
-        <p class="text-muted text-center">Processo: {{ plano_acao.processo.get_tipo_processo_display }}</p>
+        <p class="text-muted text-center">Processo: {{ plano_acao.processo.tipo.nome }}</p>
 
+        {# Formulário para editar o Plano de Ação principal #}
         <form method="post">
           {% csrf_token %}
           {{ form.as_p }}
           <div class="d-flex justify-content-end mt-4">
             <a href="{% url 'processo_detail' pk=plano_acao.processo.pk %}" class="btn btn-light me-2">Cancelar</a>
-            <button type="submit" class="btn btn-primary">Salvar Alterações</button>
+            <button type="submit" name="submit_plano_acao_update" class="btn btn-primary">Salvar Alterações</button>
           </div>
         </form>
+
+        {# REMOVIDO: <hr class="mt-5 mb-4"> #}
+        {# REMOVIDO: <h4 class="mb-3">Gerenciar Prazos</h4> #}
+        {# REMOVIDO: A tabela de prazos e o formulário de adição de prazo aqui #}
+        {# Ex:
+        <div class="table-responsive mb-4">
+            <table class="table table-sm table-hover">
+                ...
+            </table>
+        </div>
+        <h5 class="mt-4 mb-3">Adicionar Novo Prazo</h5>
+        <form method="post">
+            {% csrf_token %}
+            {{ form_prazo.as_p }}
+            <button type="submit" name="submit_prazo" class="btn btn-primary mt-2">Adicionar Prazo</button>
+        </form>
+        #}
       </div>
     </div>
   </div>

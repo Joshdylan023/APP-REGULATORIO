@@ -55,13 +55,21 @@
                 <i class="fas fa-bell"></i>
                 {% if request.notificacoes_nao_lidas_count > 0 %}<span class="badge rounded-pill badge-notification bg-danger">{{ request.notificacoes_nao_lidas_count }}</span>{% endif %}
               </a>
-              <ul class="dropdown-menu dropdown-menu-end" style="width: 350px;">
+              {# INÍCIO DA CORREÇÃO: Conteúdo do Dropdown de Notificações #}
+              <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdownMenuLink" style="width: 350px;">
                 {% for n in request.notificacoes_recentes %}
-                  <li><a class="dropdown-item {% if not n.lida %}fw-bold{% endif %}" href="{{ n.link|default:'#' }}">{{ n.mensagem }}</a></li>
+                  <li>
+                    <a class="dropdown-item {% if not n.lida %}fw-bold{% endif %}" href="{{ n.link|default:'#' }}">
+                      <p class="mb-1" style="white-space: normal;">{{ n.mensagem }}</p>
+                      <p class="small text-muted mb-0">{{ n.data_criacao|timesince }} atrás</p>
+                    </a>
+                  </li>
+                  {% if not forloop.last %}<hr class="dropdown-divider">{% endif %} {# Adiciona um divisor, exceto para a última notificação #}
                 {% empty %}
-                  <li><p class="dropdown-item text-muted text-center mb-0">Nenhuma notificação.</p></li>
+                  <li><p class="dropdown-item text-muted text-center mb-0">Nenhuma notificação recente.</p></li>
                 {% endfor %}
               </ul>
+              {# FIM DA CORREÇÃO #}
             </li>
             <li class="nav-item dropdown">
               <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownProfileLink" role="button" data-bs-toggle="dropdown" aria-expanded="false">

@@ -1,6 +1,6 @@
 # Ficheiro: core/context_processors.py (versão corrigida para o NotSupportedError)
 
-from .models import Instituicao, Perfil, Notificacao
+from .models import Instituicao, Perfil, Notificacao, User
 
 def unified_context(request):
     if not request.user.is_authenticated:
@@ -37,7 +37,7 @@ def unified_context(request):
                     del request.session['instituicao_ativa_id']
 
         # Lógica das Notificações
-        notificacoes = Notificacao.objects.filter(destinatario=request.user)
+        notificacoes = Notificacao.objects.filter(usuario=request.user)
         context['notificacoes_nao_lidas_count'] = notificacoes.filter(lida=False).count()
         context['notificacoes_recentes'] = notificacoes.order_by('-data_criacao')[:5]
 

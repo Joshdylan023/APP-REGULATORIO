@@ -10,7 +10,8 @@
   {% for processo in page_obj %}
   <tr>
     <td><code>{{ processo.protocolo_mec|default:"-" }}</code></td>
-    <td><a href="{% url 'processo_detail' pk=processo.pk %}">{{ processo.get_tipo_processo_display }}</a></td>
+    {# CORREÇÃO AQUI #}
+    <td><a href="{% url 'processo_detail' pk=processo.pk %}">{{ processo.tipo.nome }}</a></td>
     <td>{{ processo.curso.nome|default:"N/A" }}</td>
     <td><span class="badge rounded-pill bg-secondary">{{ processo.get_status_display }}</span></td>
   </tr>

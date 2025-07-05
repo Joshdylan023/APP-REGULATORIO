@@ -133,6 +133,7 @@ LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = '/selecionar-instituicao/'
 
 # Configuração para Upload de Arquivos de Mídia
+STATIC_URL = 'static/'
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')

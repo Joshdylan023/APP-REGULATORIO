@@ -18,7 +18,8 @@ from .forms import (DocumentoForm, PastaForm, PerfilFotoForm, PlanoDeAcaoForm,
                     PrazoForm, ProcessoForm)
 from .models import (Documento, Eixo, Indicador, Instituicao, LogAtividade,
                      Mantenedora, NotaSimulada, Notificacao, Pasta, Perfil,
-                     PlanoDeAcao, Prazo, ProcessoRegulatorio, Simulacao)
+                     PlanoDeAcao, Prazo, ProcessoRegulatorio, Simulacao, TipoProcesso) # Adicione TipoProcesso se ainda não estiver aqui
+
 from .notificacoes import criar_notificacao
 
 User = get_user_model()
@@ -87,7 +88,7 @@ def dashboard_view(request):
     filtro_status = request.GET.get('status', '')
     lista_processos = ProcessoRegulatorio.objects.filter(instituicao=instituicao_selecionada)
     if filtro_tipo:
-        lista_processos = lista_processos.filter(tipo_processo=filtro_tipo)
+        lista_processos = lista_processos.filter(tipo__pk=filtro_tipo)
     if filtro_status:
         lista_processos = lista_processos.filter(status=filtro_status)
     todos_processos_list = lista_processos.order_by('-id')
@@ -97,8 +98,8 @@ def dashboard_view(request):
     
     context = {
         'page_obj': page_obj, 'instituicao_usuario': instituicao_selecionada,
-        'tipos_processo': ProcessoRegulatorio.TIPO_PROCESSO_CHOICES,
-        'status_list': ProcessoRegulatorio.STATUS_CHOICES,
+        'tipos_processo': TipoProcesso.objects.all(), # Agora busca os objetos TipoProcesso
+        'status_list': ProcessoRegulatorio.status_choices, # Acessa a tupla diretamente
         'filtro_tipo_atual': filtro_tipo, 'filtro_status_atual': filtro_status,
     }
     return render(request, 'dashboard.html', context)
@@ -109,10 +110,11 @@ def processo_detail_view(request, pk):
     instituicao_id = request.session.get('instituicao_ativa_id')
     processo = get_object_or_404(ProcessoRegulatorio, pk=pk, instituicao_id=instituicao_id)
     
-    historico_simulacoes = Simulacao.objects.filter(processo=processo).order_by('-data_criacao')
+    historico_simulacoes = Simulacao.objects.filter(processo=processo).order_by('-data_simulacao')
     planos_de_acao = processo.planos_de_acao.all()
-    prazos = processo.prazos.all()
-    
+    # CORREÇÃO: Prazos agora estão ligados diretamente ao processo
+    prazos = processo.prazos_processo.all().order_by('data_limite') # <-- CORREÇÃO AQUI (nome do related_name)
+
     conceito_final_ultima_simulacao = None
     ultima_simulacao = historico_simulacoes.first()
     if ultima_simulacao:
@@ -123,8 +125,8 @@ def processo_detail_view(request, pk):
     
     if request.method == 'POST':
         form_plano_acao = PlanoDeAcaoForm(request.POST)
-        form_prazo = PrazoForm(request.POST)
-
+        form_prazo = PrazoForm(request.POST) 
+        
         if 'submit_plano' in request.POST and form_plano_acao.is_valid():
             plano = form_plano_acao.save(commit=False)
             plano.processo = processo
@@ -134,22 +136,21 @@ def processo_detail_view(request, pk):
         
         elif 'submit_prazo' in request.POST and form_prazo.is_valid():
             prazo = form_prazo.save(commit=False)
-            prazo.processo = processo
+            prazo.processo = processo # <-- CORREÇÃO AQUI: Vincula o prazo diretamente ao processo
             prazo.save()
-            messages.success(request, "Novo prazo adicionado com sucesso!")
-            return redirect('processo_detail', pk=pk)
+            messages.success(request, "Novo prazo adicionado com sucesso ao Processo!") # <-- MENSAGEM ALTERADA
+            return redirect('processo_detail', pk=pk) # Redireciona de volta para a mesma página
     else:
         form_plano_acao = PlanoDeAcaoForm()
         form_prazo = PrazoForm()
 
     context = {
         'processo': processo, 'historico_simulacoes': historico_simulacoes,
-        'planos_de_acao': planos_de_acao, 'prazos': prazos,
+        'planos_de_acao': planos_de_acao, 'prazos': prazos, # <-- Prazos atualizados
         'conceito_final_ultima_simulacao': conceito_final_ultima_simulacao,
         'form_plano_acao': form_plano_acao, 'form_prazo': form_prazo,
     }
     return render(request, 'processo_detail.html', context)
-
 
 @login_required
 @instituicao_selecionada_required
@@ -162,11 +163,11 @@ def processo_create_view(request):
         if form.is_valid():
             processo = form.save(commit=False)
             processo.instituicao = instituicao_ativa
-            processo.responsavel = request.user
+            processo.responsavel = request.user.perfil # Responsavel é Perfil, não User
             processo.save()
             setattr(processo, '_last_user', request.user)
-            messages.success(request, f"O processo '{processo.get_tipo_processo_display()}' foi criado com sucesso!")
-            criar_notificacao(request.user, f"Você criou o processo '{processo.get_tipo_processo_display()}'.")
+            messages.success(request, f"O processo '{processo.nome}' foi criado com sucesso!")
+            criar_notificacao(request.user, f"Você criou o processo '{processo.nome}'.")
             return redirect('processo_detail', pk=processo.pk)
     else:
         form = ProcessoForm()
@@ -205,9 +206,9 @@ def ged_explorer_view(request, pk):
     if pasta_atual_id:
         pasta_atual = get_object_or_404(Pasta, pk=pasta_atual_id, processo=processo)
         subpastas = pasta_atual.subpastas.order_by('nome')
-        documentos = pasta_atual.documentos.order_by('titulo')
+        documentos = pasta_atual.documentos.order_by('nome_documento')
     else:
-        subpastas = processo.pastas.filter(pasta_pai__isnull=True).order_by('nome')
+        subpastas = processo.pastas.filter(parent__isnull=True).order_by('nome')
         documentos = []
     if request.method == 'POST':
         form_pasta = PastaForm(request.POST)
@@ -215,7 +216,7 @@ def ged_explorer_view(request, pk):
         if 'submit_pasta' in request.POST and form_pasta.is_valid():
             nova_pasta = form_pasta.save(commit=False)
             nova_pasta.processo = processo
-            nova_pasta.pasta_pai = pasta_atual
+            nova_pasta.parent = pasta_atual
             nova_pasta.save()
             messages.success(request, f"Pasta '{nova_pasta.nome}' criada com sucesso!")
             return redirect(request.get_full_path())
@@ -223,9 +224,9 @@ def ged_explorer_view(request, pk):
             if pasta_atual:
                 documento = form_documento.save(commit=False)
                 documento.pasta = pasta_atual
-                documento.usuario_upload = request.user
+                documento.uploaded_by = request.user
                 documento.save()
-                messages.success(request, f"Documento '{documento.titulo}' enviado com sucesso!")
+                messages.success(request, f"Documento '{documento.nome_documento}' enviado com sucesso!")
                 return redirect(request.get_full_path())
             else:
                 messages.error(request, "Selecione uma pasta para enviar o documento.")
@@ -247,7 +248,7 @@ def documento_delete_view(request, pk):
     if request.method == 'POST':
         processo_pk = documento.pasta.processo.pk
         pasta_id = documento.pasta.id
-        messages.warning(request, f"O documento '{documento.titulo}' foi excluído permanentemente.")
+        messages.warning(request, f"O documento '{documento.nome_documento}' foi excluído permanentemente.")
         documento.delete()
         return redirect(f"{reverse('ged_explorer', args=[processo_pk])}?pasta_id={pasta_id}")
     return redirect('dashboard')
@@ -264,7 +265,7 @@ def download_all_documents_view(request, pk):
             p = pasta
             while p:
                 caminho_pasta.insert(0, p.nome)
-                p = p.pasta_pai
+                p = p.parent
             caminho_no_zip = "/".join(caminho_pasta)
             for documento in pasta.documentos.all():
                 if documento.arquivo:
@@ -302,31 +303,37 @@ def simulador_view(request, pk):
     instituicao_id = request.session.get('instituicao_ativa_id')
     processo = get_object_or_404(ProcessoRegulatorio, pk=pk, instituicao_id=instituicao_id)
     
-    # Lógica de filtro de instrumento
-    processos_de_curso = ['AUTORIZACAO_CURSO', 'RECONHECIMENTO_CURSO', 'RENOVACAO_RECONHECIMENTO']
-    processos_de_ies = ['CREDENCIAMENTO', 'RECREDENCIAMENTO', 'TRANSF_CENTRO']
-    instrumento_alvo = 'CURSO' if processo.tipo_processo in processos_de_curso else 'IES' if processo.tipo_processo in processos_de_ies else None
-    
-    eixos = Eixo.objects.filter(instrumento=instrumento_alvo).prefetch_related('indicadores').all() if instrumento_alvo else []
+    # Lógica de filtro de instrumento (AGORA USA processo.instrumento_avaliacao)
+    eixos = Eixo.objects.none() # Inicializa como QuerySet vazio
+    if processo.instrumento_avaliacao: # Verifica se um instrumento está associado
+        eixos = Eixo.objects.filter(instrumento_avaliacao=processo.instrumento_avaliacao).prefetch_related('indicadores').all()
     
     # Lógica para salvar a simulação
     if request.method == 'POST':
+        # Validar se Eixos foram encontrados para este instrumento
+        if not eixos.exists():
+            messages.error(request, "Não há eixos configurados para o instrumento de avaliação deste processo.")
+            return redirect('simulador', pk=processo.pk)
+
         nova_simulacao = Simulacao.objects.create(
             processo=processo, 
-            nome_simulacao=f"Simulação de {processo.get_tipo_processo_display()} em {timezone.now().strftime('%d/%m/%Y')}"
+            # Use o nome do processo e do instrumento para o nome da simulação
+            nome_simulacao=f"Simulação de {processo.nome} - {processo.instrumento_avaliacao.nome if processo.instrumento_avaliacao else 'Sem Instrumento'} em {timezone.now().strftime('%d/%m/%Y')}",
+            realizada_por=request.user.perfil
         )
         for key, value in request.POST.items():
             if key.startswith('nota-'):
                 indicador_id = int(key.split('-')[1])
-                NotaSimulada.objects.create(
-                    simulacao=nova_simulacao, 
-                    indicador_id=indicador_id, 
-                    nota=int(value)
-                )
+                # Verifique se o indicador pertence aos eixos do instrumento selecionado
+                if Indicador.objects.filter(pk=indicador_id, eixo__instrumento_avaliacao=processo.instrumento_avaliacao).exists():
+                    NotaSimulada.objects.create(
+                        simulacao=nova_simulacao, 
+                        indicador_id=indicador_id, 
+                        nota=float(value)
+                    )
         messages.success(request, "Simulação salva com sucesso!")
         return redirect('simulacao_resultado', pk=nova_simulacao.pk)
     
-    # Definição do contexto que estava a faltar
     context = {
         'processo': processo,
         'eixos': eixos
@@ -344,12 +351,10 @@ def simulacao_update_view(request, pk):
     simulacao = get_object_or_404(Simulacao, pk=pk, processo__instituicao_id=instituicao_id)
     processo = simulacao.processo
 
-    # Lógica de filtro de instrumento
-    processos_de_curso = ['AUTORIZACAO_CURSO', 'RECONHECIMENTO_CURSO', 'RENOVACAO_RECONHECIMENTO']
-    processos_de_ies = ['CREDENCIAMENTO', 'RECREDENCIAMENTO', 'TRANSF_CENTRO']
-    instrumento_alvo = 'CURSO' if processo.tipo_processo in processos_de_curso else 'IES' if processo.tipo_processo in processos_de_ies else None
-
-    eixos = Eixo.objects.filter(instrumento=instrumento_alvo).prefetch_related('indicadores').all() if instrumento_alvo else []
+    # Lógica de filtro de instrumento (AGORA USA processo.instrumento_avaliacao)
+    eixos = Eixo.objects.none() # Inicializa como QuerySet vazio
+    if processo.instrumento_avaliacao: # Verifica se um instrumento está associado
+        eixos = Eixo.objects.filter(instrumento_avaliacao=processo.instrumento_avaliacao).prefetch_related('indicadores').all()
 
     # Carrega as notas já existentes para preencher o formulário
     notas_existentes = {nota.indicador_id: nota.nota for nota in simulacao.notas.all()}
@@ -359,19 +364,25 @@ def simulacao_update_view(request, pk):
 
     # Lógica para salvar a simulação atualizada
     if request.method == 'POST':
+        # Validar se Eixos foram encontrados para este instrumento
+        if not eixos.exists():
+            messages.error(request, "Não há eixos configurados para o instrumento de avaliação deste processo.")
+            return redirect('simulador', pk=processo.pk)
+
         simulacao.notas.all().delete() # Apaga as notas antigas
         for key, value in request.POST.items():
             if key.startswith('nota-'):
                 indicador_id = int(key.split('-')[1])
-                NotaSimulada.objects.create(
-                    simulacao=simulacao,
-                    indicador_id=indicador_id,
-                    nota=int(value)
-                )
+                # Verifique se o indicador pertence aos eixos do instrumento selecionado
+                if Indicador.objects.filter(pk=indicador_id, eixo__instrumento_avaliacao=processo.instrumento_avaliacao).exists():
+                    NotaSimulada.objects.create(
+                        simulacao=simulacao,
+                        indicador_id=indicador_id,
+                        nota=float(value)
+                    )
         messages.success(request, "Simulação atualizada com sucesso!")
         return redirect('simulacao_resultado', pk=simulacao.pk)
 
-    # Definição do contexto que estava a faltar
     context = {
         'processo': processo,
         'eixos': eixos,
@@ -426,7 +437,7 @@ def processos_status_api_view(request):
     if not instituicao_id:
         return JsonResponse({'labels': [], 'data': []})
     contagem_status = (ProcessoRegulatorio.objects.filter(instituicao_id=instituicao_id).values('status').annotate(quantidade=Count('status')).order_by('status'))
-    status_display_map = dict(ProcessoRegulatorio.STATUS_CHOICES)
+    status_display_map = dict(ProcessoRegulatorio.status_choices)
     labels = [status_display_map.get(item['status'], item['status']) for item in contagem_status]
     data = [item['quantidade'] for item in contagem_status]
     return JsonResponse({'labels': labels, 'data': data})
@@ -436,7 +447,7 @@ def simulacao_eixos_api_view(request):
     instituicao_id = request.session.get('instituicao_ativa_id')
     if not instituicao_id:
         return JsonResponse({'labels': [], 'data': []})
-    ultima_simulacao = Simulacao.objects.filter(processo__instituicao_id=instituicao_id).order_by('-data_criacao').first()
+    ultima_simulacao = Simulacao.objects.filter(processo__instituicao_id=instituicao_id).order_by('-data_simulacao').first()
     labels, data = [], []
     if ultima_simulacao:
         resultado = (NotaSimulada.objects.filter(simulacao=ultima_simulacao).values('indicador__eixo__nome').annotate(media=Avg('nota')).order_by('indicador__eixo__nome'))

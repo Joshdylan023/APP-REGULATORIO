@@ -16,8 +16,9 @@
         <label for="tipo" class="form-label">Filtrar por Tipo</label>
         <select name="tipo" id="tipo" class="form-select">
           <option value="">Todos os Tipos</option>
-          {% for value, display in tipos_processo %}
-            <option value="{{ value }}" {% if value == filtro_tipo_atual %}selected{% endif %}>{{ display }}</option>
+          {# CORREÇÃO AQUI: Itere sobre um único objeto 'tipo' #}
+          {% for tipo in tipos_processo %}
+            <option value="{{ tipo.pk }}" {% if tipo.pk|stringformat:"s" == filtro_tipo_atual %}selected{% endif %}>{{ tipo.nome }}</option>
           {% endfor %}
         </select>
       </div>

@@ -11,13 +11,18 @@
     <tbody>
         {% for plano in planos_de_acao %}
         <tr>
-            <td style="white-space: pre-wrap;">{{ plano.descricao }}</td>
-            <td>{{ plano.responsavel_acao.get_full_name|default:"N/D" }}</td>
+            <td style="white-space: pre-wrap;">{{ plano.titulo }}</td>
+            {# CORREÇÃO AQUI: Acesse o objeto User do Perfil para obter get_full_name #}
+            <td>{{ plano.responsavel.user.get_full_name|default:"N/D" }}</td> {# <-- CORREÇÃO #}
             <td>{{ plano.data_limite|date:"d/m/Y"|default:"N/D" }}</td>
             <td class="text-center">
                 {% if plano.status == 'CONCLUIDO' %}<span class="badge bg-success">Concluído</span>
                 {% elif plano.status == 'EM_ANDAMENTO' %}<span class="badge bg-warning text-dark">Em Andamento</span>
-                {% else %}<span class="badge bg-danger">Não Iniciado</span>{% endif %}
+                {% elif plano.status == 'ATRASADO' %}<span class="badge bg-danger">Atrasado</span>
+                {% elif plano.status == 'CANCELADO' %}<span class="badge bg-secondary">Cancelado</span>
+                {% elif plano.status == 'PENDENTE' %}<span class="badge bg-info text-dark">Pendente</span>
+                {% else %}<span class="badge bg-dark">Desconhecido</span>
+                {% endif %}
             </td>
             <td class="text-center">
                 <a href="{% url 'plano_acao_update' pk=plano.pk %}" class="btn btn-outline-secondary btn-sm">

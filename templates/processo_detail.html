@@ -20,12 +20,22 @@
       <div class="card-body">
         <p><strong>Instituição:</strong> {{ processo.instituicao.nome }}</p>
         {% if processo.curso %}<p><strong>Curso:</strong> {{ processo.curso.nome }}</p>{% endif %}
-        <p><strong>Status:</strong> <span class="badge rounded-pill bg-info">{{ processo.get_status_display }}</span></p>
+        {# CORREÇÃO AQUI: Lógica de status para o processo principal #}
+        <p><strong>Status:</strong> 
+            {% if processo.status == 'CONCLUIDO' %}<span class="badge rounded-pill bg-success">Concluído</span>
+            {% elif processo.status == 'EM_ANDAMENTO' %}<span class="badge rounded-pill bg-warning text-dark">Em Andamento</span>
+            {% elif processo.status == 'AGUARDANDO_INFORMACAO' %}<span class="badge rounded-pill bg-info text-dark">Aguardando Informação</span>
+            {% elif processo.status == 'AGUARDANDO_AVALIACAO' %}<span class="badge rounded-pill bg-primary">Aguardando Avaliação</span>
+            {% elif processo.status == 'SUSPENSO' %}<span class="badge rounded-pill bg-secondary">Suspenso</span>
+            {% elif processo.status == 'CANCELADO' %}<span class="badge rounded-pill bg-danger">Cancelado</span>
+            {% else %}<span class="badge rounded-pill bg-dark">Desconhecido</span>
+            {% endif %}
+        </p>
         <p><strong>Conceito (Última Simulação):</strong> 
           {% if conceito_final_ultima_simulacao is not None %}<strong class="text-primary fs-5">{{ conceito_final_ultima_simulacao }}</strong>{% if historico_simulacoes.first %}<a href="{% url 'simulacao_update' pk=historico_simulacoes.first.pk %}" class="ms-2 small text-decoration-underline">(Editar Simulação)</a>{% endif %}{% else %}<span class="text-muted">Nenhuma simulação realizada</span>{% endif %}
         </p>
         <p><strong>Protocolo e-MEC:</strong> <code>{{ processo.protocolo_mec|default:"Não informado" }}</code></p>
-        <p><strong>Responsável:</strong> {{ processo.responsavel.get_full_name|default:processo.responsavel.username }}</p>
+        <p><strong>Responsável:</strong> {{ processo.responsavel.user.get_full_name|default:processo.responsavel.user.username }}</p>
       </div>
     </div>
     <div class="card">
@@ -33,7 +43,7 @@
         <div class="card-body">
             <ul class="list-group list-group-light mb-4">
                 {% for prazo in prazos %}
-                    <li class="list-group-item"><strong>{{ prazo.data|date:"d/m/Y" }}:</strong> {{ prazo.descricao }}</li>
+                    <li class="list-group-item"><strong>{{ prazo.data_limite|date:"d/m/Y" }}:</strong> {{ prazo.descricao }}</li>
                 {% empty %}
                     <li class="list-group-item text-muted">Nenhum prazo cadastrado.</li>
                 {% endfor %}
@@ -58,47 +68,7 @@
     <div class="card">
         <div class="card-header"><i class="fas fa-tasks me-2"></i> Plano de Ação e Adequações</div>
         <div class="card-body">
-            <table class="table table-hover">
-                <thead>
-                    <tr>
-                        <th>Descrição da Ação</th>
-                        <th>Responsável</th>
-                        <th>Prazo</th>
-                        <th class="text-center">Status</th>
-                        <th class="text-center">Ações</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for plano in planos_de_acao %}
-                    <tr>
-                        <td style="white-space: pre-wrap;">{{ plano.descricao }}</td>
-                        <td>{{ plano.responsavel_acao.get_full_name|default:"N/D" }}</td>
-                        <td>{{ plano.data_limite|date:"d/m/Y"|default:"N/D" }}</td>
-                        <td class="text-center">
-                            {% if plano.status == 'CONCLUIDO' %}<span class="badge bg-success">Concluído</span>
-                            {% elif plano.status == 'EM_ANDAMENTO' %}<span class="badge bg-warning text-dark">Em Andamento</span>
-                            {% else %}<span class="badge bg-danger">Não Iniciado</span>{% endif %}
-                        </td>
-                        <td class="text-center">
-                            <a href="{% url 'plano_acao_update' pk=plano.pk %}" class="btn btn-outline-secondary btn-sm">
-                                <i class="fas fa-pencil-alt"></i>
-                            </a>
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="5" class="text-center text-muted">Nenhum item no plano de ação ainda.</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-            <hr>
-            <h5 class="mt-4">Adicionar Novo Item ao Plano</h5>
-            <form method="post">
-                {% csrf_token %}
-                {{ form_plano_acao.as_p }}
-                <button type="submit" name="submit_plano" class="btn btn-primary mt-2">Adicionar Ação</button>
-            </form>
+            {% include 'partials/_plano_acao_table.html' %} {# Este parcial já tem a lógica de status #}
         </div>
     </div>
   </div>

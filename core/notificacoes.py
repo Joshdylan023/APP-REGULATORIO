@@ -10,7 +10,7 @@ def criar_notificacao(usuario, mensagem, link=None):
         return
 
     Notificacao.objects.create(
-        destinatario=usuario,
+        usuario=usuario, # <--- CORREÇÃO: Mude 'destinatario' para 'usuario'
         mensagem=mensagem,
         link=link
     )
